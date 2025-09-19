@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Core Versa LLC — Load Board</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="Core Versa LLC Load Board — secure dispatcher & driver portals with posting, deletion, offers, and auto‑refresh." />
+  <style>*{scrollbar-width:thin}</style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <!-- Top App Bar -->
+  <header class="bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded bg-emerald-500 grid place-items-center font-bold">CV</div>
+        <div>
+          <h1 class="text-lg font-semibold leading-tight">Core Versa LLC</h1>
+          <p class="text-xs text-slate-300 -mt-0.5">Load Board</p>
+        </div>
+      </div>
+      <nav class="ml-auto hidden md:flex items-center gap-6 text-sm text-slate-300">
+        <a class="hover:text-white" href="#/login-dispatcher">Dispatcher</a>
+        <a class="hover:text-white" href="#/login-driver">Driver</a>
+        <a class="hover:text-white" href="#/driver">Browse</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ROUTER VIEWS -->
+  <main id="view" class="min-h-[70vh]"></main>
+
+  <!-- ===== Templates ===== -->
+  <template id="tpl-login">
+    <section class="max-w-md mx-auto mt-10 bg-white border rounded-2xl shadow-sm p-6">
+      <h2 class="text-xl font-semibold mb-1" data-role-title>Secure Login</h2>
+      <p class="text-sm text-slate-600 mb-6" id="loginMessage">Enter your email and passcode to continue.</p>
+      <form id="loginForm" class="grid gap-3">
+        <input id="loginEmail" type="email" required placeholder="Email" class="border rounded-lg px-3 py-2">
+        <input id="loginPass" type="password" required placeholder="Passcode" class="border rounded-lg px-3 py-2">
+        <button class="bg-slate-900 text-white rounded-lg px-3 py-2 hover:bg-black">Log in</button>
+      </form>
+      <p class="text-xs text-slate-500 mt-4">Need access? Contact <a class="underline" href="mailto:coreversallc@gmail.com">coreversallc@gmail.com</a></p>
+    </section>
+  </template>
+
+  <template id="tpl-dispatcher">
+    <section class="max-w-7xl mx-auto px-4 py-6">
+      <!-- Dispatcher Load Board -->
+      <div class="sticky top-0 z-30 bg-white/90 backdrop-blur border rounded-xl p-3 flex flex-wrap items-center gap-3">
+        <input id="q" class="flex-1 min-w-[240px] border rounded-lg px-3 py-2" placeholder="Search cities, lanes, IDs…" />
+        <input id="originAdd" class="border rounded-lg px-3 py-2" placeholder="Origin city (add & Enter)" />
+        <select id="equip" class="border rounded-lg px-3 py-2">
+          <option value="">Equipment</option>
+          <option selected>26' Box Truck</option>
+          <option>24' Box Truck</option>
+          <option>Sprinter Van</option>
+          <option>53' Dry Van</option>
+        </select>
+        <select id="radius" class="border rounded-lg px-3 py-2">
+          <option>25</option><option selected>50</option><option>100</option><option>200</option>
+        </select>
+        <label class="flex items-center gap-2 text-sm text-slate-600"><span>Auto‑refresh</span><input id="auto" type="checkbox" class="h-4 w-4"></label>
+        <select id="ival" class="border rounded-lg px-2 py-2"><option>15</option><option selected>30</option><option>60</option><option>120</option></select>
+        <button id="btnRefresh" class="border rounded-lg px-3 py-2 hover:bg-slate-50">⟳ Refresh now</button>
+        <div class="ml-auto text-sm text-slate-600 flex items-center gap-4"><span>Next refresh: <strong id="nextIn">—</strong></span><span>Last updated: <strong id="lastAt">—</strong></span></div>
+      </div>
+      <div id="chips" class="px-1 py-2 flex flex-wrap gap-2"></div>
+      <div class="text-sm text-slate-700 mb-2">Showing <strong id="rs">1</strong> – <strong id="re">50</strong> of <strong id="rt">0</strong> results</div>
+
+      <!-- Post a Load -->
+      <div class="bg-white border rounded-2xl p-4 mb-4">
+        <h3 class="font-semibold mb-3">Post a Load</h3>
+        <form id="postForm" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input name="origin_city" required class="border rounded-lg px-3 py-2" placeholder="Origin city">
+          <input name="dest_city" required class="border rounded-lg px-3 py-2" placeholder="Destination city">
+          <input type="number" step="0.1" name="miles" required class="border rounded-lg px-3 py-2" placeholder="Miles">
+          <input type="number" step="0.01" name="rate_usd" required class="border rounded-lg px-3 py-2" placeholder="Rate ($)">
+          <input name="equipment" class="border rounded-lg px-3 py-2" placeholder="Equipment" value="26' Box Truck">
+          <input type="datetime-local" name="pickup_time" class="border rounded-lg px-3 py-2">
+          <button class="md:col-span-3 bg-emerald-600 text-white rounded-lg px-3 py-2 hover:bg-emerald-700">Publish Load</button>
+        </form>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="md:col-span-2">
+          <div id="list" class="grid gap-3"></div>
+          <div class="mt-4 flex items-center gap-2 text-sm">
+            <button id="prev" class="border rounded px-3 py-1.5 disabled:opacity-40">Prev</button>
+            <button id="next" class="border rounded px-3 py-1.5">Next</button>
+            <span class="ml-3 text-slate-600">Page <strong id="pg">1</strong></span>
+            <button id="logout" class="ml-auto text-slate-500 underline">Log out</button>
+          </div>
+        </div>
+        <!-- Offers Inbox -->
+        <aside class="bg-white border rounded-2xl p-4 h-fit">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold">Driver Offers</h3>
+            <span class="text-xs text-slate-500" id="offerCount">0</span>
+          </div>
+          <div id="offerList" class="grid gap-2"></div>
+        </aside>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-driver">
+    <section class="max-w-7xl mx-auto px-4 py-6">
+      <!-- Driver Load Board -->
+      <div class="sticky top-0 z-30 bg-white/90 backdrop-blur border rounded-xl p-3 flex flex-wrap items-center gap-3">
+        <input id="dq" class="flex-1 min-w-[240px] border rounded-lg px-3 py-2" placeholder="Search cities, lanes, IDs…" />
+        <select id="dsort" class="border rounded-lg px-2 py-2"><option value="relevance">Relevance</option><option value="rate_desc">Rate (high → low)</option><option value="rpm_desc">$ / mi (high → low)</option><option value="soon">Starting soon</option></select>
+        <label class="flex items-center gap-2 text-sm text-slate-600"><span>Auto‑refresh</span><input id="dauto" type="checkbox" class="h-4 w-4"></label>
+        <select id="dival" class="border rounded-lg px-2 py-2"><option>15</option><option selected>30</option><option>60</option></select>
+        <button id="drefresh" class="border rounded-lg px-3 py-2 hover:bg-slate-50">⟳ Refresh now</button>
+        <div class="ml-auto text-sm text-slate-600 flex items-center gap-4"><span>Next refresh: <strong id="dnext">—</strong></span><span>Last updated: <strong id="dlast">—</strong></span></div>
+      </div>
+      <div id="dlist" class="grid gap-3 mt-2"></div>
+      <div class="mt-4 flex items-center gap-2 text-sm"><button id="dlogout" class="ml-auto text-slate-500 underline">Log out</button></div>
+    </section>
+  </template>
+
+  <!-- Offer/Request page -->
+  <template id="tpl-offer">
+    <section class="max-w-3xl mx-auto px-4 py-8">
+      <a href="#/driver" class="text-sm text-slate-500 hover:underline">← Back to loads</a>
+      <div class="mt-3 bg-white border rounded-2xl p-5">
+        <h2 class="text-lg font-semibold mb-4">Request / Offer</h2>
+        <div id="offerLoad" class="mb-5 text-sm text-slate-700">Loading…</div>
+        <form id="offerForm" class="grid gap-3">
+          <div class="grid md:grid-cols-2 gap-3">
+            <input id="ofDriver" class="border rounded-lg px-3 py-2" placeholder="Driver name" required>
+            <input id="ofEmail" type="email" class="border rounded-lg px-3 py-2" placeholder="Driver email" required>
+          </div>
+          <div class="grid md:grid-cols-3 gap-3">
+            <input id="ofRate" type="number" step="0.01" class="border rounded-lg px-3 py-2" placeholder="Your offer ($)" required>
+            <input id="ofEta" type="datetime-local" class="border rounded-lg px-3 py-2" placeholder="Pickup ETA">
+            <input id="ofTruck" class="border rounded-lg px-3 py-2" placeholder="Equipment (e.g., 26' Box Truck)">
+          </div>
+          <textarea id="ofMsg" rows="4" class="border rounded-lg px-3 py-2" placeholder="Notes for dispatcher (equipment, docs, special handling, etc.)"></textarea>
+          <button class="bg-emerald-600 text-white rounded-lg px-3 py-2 hover:bg-emerald-700">Submit Request</button>
+        </form>
+      </div>
+    </section>
+  </template>
+
+  <script>
+  ;(() => {
+    const V = document.getElementById('view');
+    const T = id => document.getElementById(id).content.cloneNode(true);
+    const SESSION_KEY = 'cv.user';
+    const API = '/api/loads'; // loads API; offers will use /api/offers
+
+    // ===== Simple Offer Store (fallback to localStorage) =====
+    const OfferStore = {
+      key: 'cv.offers',
+      all(){ return JSON.parse(localStorage.getItem(this.key)||'[]'); },
+      add(o){ const arr=this.all(); arr.unshift(o); localStorage.setItem(this.key, JSON.stringify(arr)); },
+    };
+
+    const Auth = {
+      current(){ try{ return JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null'); }catch(e){ return null } },
+      login(role,email){ sessionStorage.setItem(SESSION_KEY, JSON.stringify({role,email})); },
+      logout(){ sessionStorage.removeItem(SESSION_KEY); location.hash = rolePath('login'); }
+    }
+    const rolePath = (what) => {
+      const u = Auth.current();
+      if(what==='login'){ return u?.role==='dispatcher' ? '#/login-dispatcher' : '#/login-driver'; }
+      return u?.role==='dispatcher' ? '#/dispatcher' : '#/driver';
+    }
+
+    // ===== LOGIN =====
+    function renderLogin(role){
+      V.innerHTML='';
+      const frag = T('tpl-login');
+      const roleTitle = frag.querySelector('[data-role-title]');
+      const msg = frag.getElementById('loginMessage');
+      const email = frag.getElementById('loginEmail');
+      const pass = frag.getElementById('loginPass');
+      roleTitle.textContent = role==='dispatcher' ? 'Dispatcher Login' : 'Driver Login';
+      if(role==='dispatcher'){
+        msg.innerHTML = 'Enter your email <strong>coreversallc@gmail.com</strong> and <strong>(0417)</strong> passcode to continue.';
+        email.value = 'coreversallc@gmail.com';
+        pass.placeholder = 'Passcode (0417)';
+      } else {
+        msg.innerHTML = 'Enter your email <strong>driver@coreversallc.com</strong> and temporary passcode <strong>DRIV3R1</strong> to continue.';
+        email.value = 'driver@coreversallc.com';
+        pass.placeholder = 'Passcode (DRIV3R1)';
+      }
+      const form = frag.getElementById('loginForm');
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const ok = await fakeVerify(role, email.value.trim(), pass.value.trim());
+        if(!ok){ alert('Invalid credentials'); return; }
+        Auth.login(role, email.value.trim());
+        location.hash = role==='dispatcher' ? '#/dispatcher' : '#/driver';
+      });
+      V.appendChild(frag);
+    }
+
+    // ===== TEMP AUTH =====
+    async function fakeVerify(role,email,pass){
+      if(!email || !pass) return false;
+      if(role==='dispatcher') {
+        const okEmail = email.toLowerCase() === 'coreversallc@gmail.com';
+        const okPass = pass === '0417' || /^CVD-/.test(pass);
+        return okEmail && okPass;
+      }
+      const driverPass = pass === 'DRIV3R1';
+      return driverPass || /^CVDV-/.test(pass) || pass.length >= 4;
+    }
+
+    // ===== Helpers for mock data =====
+    function generateMockList(n=185){
+      const cities=['LAS VEGAS, NV','TWINSBURG, OH','HEBRON, KY','BROOK PARK, MN','ATLANTA, GA'];
+      const dests=['CAMBRIDGE, OH','GAMBIER, OH','BROWNSBORO, AL','GRACEVILLE, FL','CORDOVA, AL'];
+      return Array.from({length:n},(_,i)=>({
+        id:'LD'+(1000+i), origin_city:cities[i%cities.length], dest_city:dests[(i*2)%dests.length],
+        miles: 120+((i*17)%220), rate_usd: 300+((i*31)%280), equipment: "26' Box Truck",
+        work_type:'One‑Way', pickup_time: Date.now()+i*3600_000, start_eta_minutes:(i%6? 180:45), status:'Live', updated_at:Date.now()-((i%10)*60000)
+      }));
+    }
+
+    async function fetchLoadList(params){
+      const url = API + '?' + new URLSearchParams(params).toString();
+      try{ const res = await fetch(url); if(!res.ok) throw 0; return await res.json(); }
+      catch{ const all = generateMockList(185); const s=(+params.page-1)*(+params.limit); return {items: all.slice(s, s+(+params.limit)), total: all.length}; }
+    }
+    async function fetchLoadById(id){
+      try{ const r=await fetch(API+'/'+encodeURIComponent(id)); if(!r.ok) throw 0; return await r.json(); }
+      catch{ const all = generateMockList(185); return all.find(x=> x.id===id) || null; }
+    }
+
+    // ===== DISPATCHER VIEW =====
+    function renderDispatcher(){
+      if(Auth.current()?.role!=='dispatcher'){ location.hash = '#/login-dispatcher'; return; }
+      V.innerHTML='';
+      const frag = T('tpl-dispatcher');
+      const el = {
+        q: frag.getElementById('q'), origin: frag.getElementById('originAdd'), equip: frag.getElementById('equip'), radius: frag.getElementById('radius'),
+        auto: frag.getElementById('auto'), ival: frag.getElementById('ival'), btnRefresh: frag.getElementById('btnRefresh'), nextIn: frag.getElementById('nextIn'), lastAt: frag.getElementById('lastAt'),
+        chips: frag.getElementById('chips'), list: frag.getElementById('list'), rs: frag.getElementById('rs'), re: frag.getElementById('re'), rt: frag.getElementById('rt'),
+        prev: frag.getElementById('prev'), next: frag.getElementById('next'), pg: frag.getElementById('pg'),
+        postForm: frag.getElementById('postForm'), logout: frag.getElementById('logout'),
+        offerList: frag.getElementById('offerList'), offerCount: frag.getElementById('offerCount')
+      };
+
+      let page=1, total=0, timer=null, countdown=0; const PAGE=50;
+      const state = { query:'', origins:[], equipment:["26' Box Truck"], radius:50 };
+
+      const setLast=()=> el.lastAt.textContent=new Date().toLocaleTimeString();
+      const setNext=s=> el.nextIn.textContent = s>0? s+'s':'—';
+
+      function chipRender(){ el.chips.innerHTML='';
+        const chips=[];
+        state.origins.forEach(c=> chips.push({label:`Origin: ${c}`, remove:()=>{ state.origins=state.origins.filter(x=>x!==c); fetchRender(); }}));
+        if(state.radius) chips.push({label:`Radius: ${state.radius} mi`, remove:()=>{state.radius=null; fetchRender();}});
+        state.equipment.forEach(eq=> chips.push({label:`Equipment: ${eq}`, remove:()=>{ state.equipment=state.equipment.filter(x=>x!==eq); fetchRender(); }}));
+        if(state.query) chips.push({label:`Search: ${state.query}`, remove:()=>{ state.query=''; el.q.value=''; fetchRender(); }});
+        chips.forEach(ch=>{ const s=document.createElement('span'); s.className='inline-flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full'; s.innerHTML=`<span class='text-sm'>${ch.label}</span><button class='text-slate-500'>✕</button>`; s.querySelector('button').onclick=ch.remove; el.chips.appendChild(s); });
+      }
+
+      function row(load){
+        const miles = typeof load.miles==='number'? load.miles.toFixed(1) : '—';
+        const rate = Number(load.rate_usd||0);
+        const rpm = rate && load.miles ? (rate/load.miles).toFixed(2) : '—';
+        const soon = Number(load.start_eta_minutes ?? 9999) <= 60;
+        const art = document.createElement('article');
+        art.className='border bg-white rounded-xl p-4 hover:shadow-sm transition';
+        art.innerHTML = `
+          <div class="flex gap-3 items-start">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                ${soon?'<span class="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded">Starting soon</span>':''}
+                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded">${load.status||'Live'}</span>
+                <span class="text-xs text-slate-500">${load.work_type||'One‑Way/Round Trip'}</span>
+              </div>
+              <div class="text-sm text-slate-700 mb-1">
+                <span class="font-medium">${load.origin_city}</span>
+                <span class="mx-2">→</span>
+                <span class="font-medium">${load.dest_city}</span>
+                <span class="mx-2 text-slate-400">•</span>
+                <span>${miles} mi</span>
+                <span class="mx-2 text-slate-400">•</span>
+                <span>${load.equipment||"26' Truck"}</span>
+              </div>
+              <div class="text-xs text-slate-500">${load.pickup_time? new Date(load.pickup_time).toLocaleString():''}</div>
+            </div>
+            <div class="text-right min-w-[160px]">
+              <div class="text-emerald-600 font-semibold">$${rate.toFixed(2)}</div>
+              <div class="text-xs text-slate-500">$${rpm}/mi</div>
+              <div class="mt-3 flex gap-2 justify-end">
+                <button class="px-2 py-1 text-sm border rounded hover:bg-slate-50" data-edit="${load.id}">Edit</button>
+                <button class="px-2 py-1 text-sm border rounded text-red-600 hover:bg-red-50" data-del="${load.id}">Delete</button>
+              </div>
+            </div>
+          </div>`;
+        art.querySelector('[data-del]').onclick =()=> onDelete(load.id);
+        art.querySelector('[data-edit]').onclick =()=> alert('Edit flow not implemented in this stub');
+        return art;
+      }
+
+      async function fetchRender(){
+        const data = await fetchLoadList({page, limit: PAGE, q: state.query||''});
+        total=data.total||data.items.length; el.list.innerHTML=''; data.items.forEach(x=> el.list.appendChild(row(x)));
+        el.rs.textContent=(page-1)*PAGE+1; el.re.textContent=Math.min(page*PAGE,total); el.rt.textContent=total; setLast();
+        renderOffers();
+      }
+
+      function startTimer(){ stopTimer(); if(!el.auto.checked){ setNext(0); return; } countdown=parseInt(el.ival.value)||30; setNext(countdown);
+        timer=setInterval(()=>{ countdown--; if(countdown<=0){ fetchRender(); countdown=parseInt(el.ival.value)||30; } el.nextIn.textContent=countdown+'s'; },1000); }
+      function stopTimer(){ if(timer){ clearInterval(timer); timer=null; }}
+
+      async function onPost(form){
+        const body=Object.fromEntries(new FormData(form).entries());
+        body.miles=parseFloat(body.miles); body.rate_usd=parseFloat(body.rate_usd); body.status='Live';
+        try{
+          const r=await fetch(API,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+          if(!r.ok) throw 0; await fetchRender(); form.reset(); alert('Load published');
+        }catch{
+          const local = JSON.parse(localStorage.getItem('cv.loads')||'[]');
+          body.id='LD'+(1000+local.length+1); local.unshift(body); localStorage.setItem('cv.loads',JSON.stringify(local));
+          await fetchRender(); form.reset(); alert('Load published (local)');
+        }
+      }
+      async function onDelete(id){
+        if(!confirm('Delete this load?')) return;
+        try{
+          const r=await fetch(API+'/'+encodeURIComponent(id),{ method:'DELETE' });
+          if(!r.ok) throw 0; await fetchRender();
+        }catch{
+          const local = JSON.parse(localStorage.getItem('cv.loads')||'[]').filter(x=>x.id!==id);
+          localStorage.setItem('cv.loads',JSON.stringify(local)); await fetchRender();
+        }
+      }
+
+      function renderOffers(){
+        const offers = OfferStore.all();
+        el.offerCount.textContent = offers.length;
+        el.offerList.innerHTML = '';
+        offers.forEach(o=>{
+          const it = document.createElement('div');
+          it.className = 'border rounded-lg p-3 text-sm';
+          it.innerHTML = `<div class='flex items-start justify-between gap-2'>
+            <div>
+              <div class='font-medium'>${o.driver_name} <span class='text-slate-400'>•</span> <a class='underline' href='mailto:${o.driver_email}'>${o.driver_email}</a></div>
+              <div class='text-slate-600'>Offer: <span class='font-semibold'>$${Number(o.offer_rate).toFixed(2)}</span> for <span class='font-mono'>${o.load_id}</span></div>
+              <div class='text-xs text-slate-500'>${new Date(o.created_at).toLocaleString()}</div>
+              ${o.message ? `<div class='mt-1 text-slate-700'>“${o.message}”</div>`: ''}
+            </div>
+            <div class='flex flex-col gap-2'>
+              <button class='px-2 py-1 border rounded hover:bg-slate-50' disabled>Accept (stub)</button>
+              <button class='px-2 py-1 border rounded hover:bg-slate-50' disabled>Decline (stub)</button>
+            </div>
+          </div>`;
+          el.offerList.appendChild(it);
+        });
+      }
+
+      // Wire events
+      el.q.addEventListener('keydown',e=>{ if(e.key==='Enter'){ state.query=e.target.value.trim(); page=1; fetchRender(); }});
+      el.origin.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const v=e.target.value.trim(); if(v&&!state.origins.includes(v)) state.origins.push(v); e.target.value=''; fetchRender(); }});
+      el.equip.addEventListener('change',()=>{ state.equipment= el.equip.value? [el.equip.value]: []; fetchRender(); });
+      el.radius.addEventListener('change',()=>{ state.radius=parseInt(el.radius.value)||null; fetchRender();});
+      el.btnRefresh.onclick=fetchRender; el.ival.onchange=startTimer; el.auto.onchange=startTimer;
+      el.prev.onclick=()=>{ if(page>1){ page--; el.pg.textContent=page; fetchRender(); } };
+      el.next.onclick=()=>{ const max=Math.max(1,Math.ceil((total||0)/PAGE)); if(page<max){ page++; el.pg.textContent=page; fetchRender(); } };
+      el.postForm.addEventListener('submit', e=>{ e.preventDefault(); onPost(e.target); });
+      el.logout.onclick=()=>{ Auth.logout(); };
+
+      fetchRender(); startTimer(); V.appendChild(frag);
+    }
+
+    // ===== DRIVER VIEW =====
+    function renderDriver(){
+      if(Auth.current()?.role!=='driver'){ location.hash = '#/login-driver'; return; }
+      V.innerHTML=''; const frag=T('tpl-driver');
+      const E = { q:frag.getElementById('dq'), sort:frag.getElementById('dsort'), auto:frag.getElementById('dauto'), ival:frag.getElementById('dival'), btn:frag.getElementById('drefresh'), next:frag.getElementById('dnext'), last:frag.getElementById('dlast'), list:frag.getElementById('dlist'), logout:frag.getElementById('dlogout') };
+      let timer=null, cd=0; const PAGE=50;
+
+      function row(load){
+        const miles = typeof load.miles==='number'? load.miles.toFixed(1):'—'; const rate=Number(load.rate_usd||0); const rpm = rate && load.miles? (rate/load.miles).toFixed(2):'—'; const soon = Number(load.start_eta_minutes??9999)<=60;
+        const el=document.createElement('article'); el.className='border bg-white rounded-xl p-4 hover:shadow-sm transition';
+        el.innerHTML=`<div class='flex gap-3 items-start'><div class='flex-1'><div class='flex items-center gap-2 mb-1'>${soon?"<span class='text-xs bg-indigo-600 text-white px-2 py-0.5 rounded'>Starting soon</span>":''}<span class='text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded'>${load.status||'Live'}</span><span class='text-xs text-slate-500'>${load.work_type||'One‑Way/Round Trip'}</span></div><div class='text-sm text-slate-700 mb-1'><span class='font-medium'>${load.origin_city}</span><span class='mx-2'>→</span><span class='font-medium'>${load.dest_city}</span><span class='mx-2 text-slate-400'>•</span><span>${miles} mi</span><span class='mx-2 text-slate-400'>•</span><span>${load.equipment||"26' Truck"}</span></div><div class='text-xs text-slate-500'>${load.pickup_time? new Date(load.pickup_time).toLocaleString():''}</div></div><div class='text-right min-w-[160px]'><div class='text-emerald-600 font-semibold'>$${rate.toFixed(2)}</div><div class='text-xs text-slate-500'>$${rpm}/mi</div><div class='mt-3'><button class='px-3 py-1.5 text-sm border rounded hover:bg-slate-50' data-offer='${load.id}'>Request / Offer</button></div></div></div>`;
+        el.querySelector('[data-offer]').onclick=()=> { location.hash = `#/offer?load=${encodeURIComponent(load.id)}`; };
+        return el;
+      }
+
+      async function fetchLoads(){ return fetchLoadList({page:1, limit: PAGE}); }
+
+      async function render(){ E.list.innerHTML=''; const data=await fetchLoads(); (data.items||[]).forEach(x=> E.list.appendChild(row(x))); E.last.textContent=new Date().toLocaleTimeString(); }
+      function start(){ stop(); if(!E.auto.checked){ E.next.textContent='—'; return;} cd=parseInt(E.ival.value)||30; E.next.textContent=cd+'s'; timer=setInterval(()=>{ cd--; if(cd<=0){ render(); cd=parseInt(E.ival.value)||30; } E.next.textContent=cd+'s'; },1000);} function stop(){ if(timer){ clearInterval(timer); timer=null; }}
+
+      E.q.addEventListener('keydown',e=>{ if(e.key==='Enter'){ render(); }});
+      E.btn.onclick=render; E.ival.onchange=start; E.auto.onchange=start; E.logout.onclick=()=> Auth.logout();
+
+      render(); start(); V.appendChild(frag);
+    }
+
+    // ===== OFFER PAGE =====
+    function renderOffer(){
+      if(Auth.current()?.role!=='driver'){ location.hash = '#/login-driver'; return; }
+      V.innerHTML=''; const frag = T('tpl-offer');
+      const el = { box: frag.getElementById('offerLoad'), form: frag.getElementById('offerForm'), name: null };
+
+      // Parse load id
+      const params = new URLSearchParams(location.hash.split('?')[1]||'');
+      const loadId = params.get('load');
+
+      (async ()=>{
+        const ld = await fetchLoadById(loadId);
+        if(!ld){ el.box.textContent = 'Load not found.'; return; }
+        const miles = typeof ld.miles==='number'? ld.miles.toFixed(1):'—';
+        el.box.innerHTML = `<div class='text-slate-800'><div class='font-medium'>${ld.origin_city} → ${ld.dest_city}</div><div class='text-sm text-slate-600'>${miles} mi • ${ld.equipment||"26' Truck"} • ${ld.pickup_time? new Date(ld.pickup_time).toLocaleString(): ''}</div><div class='text-sm mt-1'>Current rate: <span class='font-semibold'>$${Number(ld.rate_usd||0).toFixed(2)}</span> • Load ID: <span class='font-mono'>${ld.id}</span></div></div>`;
+      })();
+
+      // Prefill driver info from session if present
+      const user = Auth.current();
+      frag.querySelector('#ofEmail').value = user?.email || '';
+
+      frag.getElementById('offerForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const payload = {
+          load_id: loadId,
+          driver_name: frag.querySelector('#ofDriver').value.trim(),
+          driver_email: frag.querySelector('#ofEmail').value.trim(),
+          offer_rate: parseFloat(frag.querySelector('#ofRate').value),
+          eta: frag.querySelector('#ofEta').value||null,
+          equipment: frag.querySelector('#ofTruck').value||null,
+          message: frag.querySelector('#ofMsg').value||'',
+          created_at: Date.now()
+        };
+        // Try API first, then fallback to local store
+        let ok = false;
+        try{
+          const r = await fetch('/api/offers', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          ok = r.ok;
+        }catch{ ok=false; }
+        if(!ok){ OfferStore.add(payload); }
+        alert('Request submitted to dispatcher.');
+        location.hash = '#/driver';
+      });
+
+      V.appendChild(frag);
+    }
+
+    // ===== ROUTER =====
+    function route(){
+      const h = location.hash || '#/login-driver';
+      if(h.startsWith('#/login-dispatcher')) return renderLogin('dispatcher');
+      if(h.startsWith('#/login-driver')) return renderLogin('driver');
+      if(h.startsWith('#/dispatcher')) return renderDispatcher();
+      if(h.startsWith('#/driver')) return renderDriver();
+      if(h.startsWith('#/offer')) return renderOffer();
+      return renderLogin('driver');
+    }
+    window.addEventListener('hashchange', route);
+    route();
+  })();
+  </script>
+</body>
+</html>
